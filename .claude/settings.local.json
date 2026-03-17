@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(npx vite:*)",
+      "Bash(chmod +x /Users/parasghai/Desktop/cost_allocation/agentai/infra/deploy.sh)",
+      "Bash(aws --version)",
+      "Bash(curl \"https://awscli.amazonaws.com/AWSCLIV2.pkg\" -o /tmp/AWSCLIV2.pkg)",
+      "Bash(sudo installer:*)",
+      "Bash(npm install:*)",
+      "Bash(find /Users/parasghai/Desktop -maxdepth 2 -name *exl* -o -name *EXL* -o -name *xtrakto* -o -name *Xtrakto*)",
+      "Bash(node -e \"const XLSX = require\\(''xlsx''\\); const wb = XLSX.readFile\\(''public/data/credentials.xlsx''\\); const ws = wb.Sheets[wb.SheetNames[0]]; console.log\\(JSON.stringify\\(XLSX.utils.sheet_to_json\\(ws\\), null, 2\\)\\);\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm run:*)",
+      "Bash(aws s3:*)",
+      "Bash(aws cloudfront:*)",
+      "Bash(aws cloudformation:*)",
+      "Bash(zip -r ../lambda.zip . -x \"node_modules/.cache/*\" \"*.md\" \".env*\")",
+      "Bash(aws dynamodb:*)",
+      "Bash(ls /Users/parasghai/Desktop/cost_allocation/agentai/package.json /Users/parasghai/Desktop/cost_allocation/agentai/backend/package.json /Users/parasghai/Desktop/cost_allocation/agentai/vite.config.*)",
+      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f -name *import* -o -name *upload*)",
+      "Bash(grep -r \"middleware\\\\|authenticate\\\\|verify\" /Users/parasghai/Desktop/cost_allocation/agentai/backend --include=*.js)",
+      "Bash(npm ci:*)",
+      "Bash(zip -r lambda.zip backend/ -x \"backend/node_modules/.cache/*\" \"backend/*.md\" \"backend/.env*\")",
+      "Bash(aws lambda:*)",
+      "Bash(aws iam put-role-policy --role-name cost-metrics-lambda-role --policy-name SubmissionsTableAccess --policy-document '{:*)",
+      "Bash(EMPLOYEES_TABLE=cost-metrics-employees COST_CODES_TABLE=cost-metrics-cost-codes ALLOCATIONS_TABLE=cost-metrics-allocations LOOKUPS_TABLE=cost-metrics-lookups CREDENTIALS_TABLE=cost-metrics-credentials AWS_REGION=us-east-1 node db/seed.js)",
+      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f \\\\\\(-name *.yaml -o -name *.yml -o -name *.json -o -name *.ts -o -name *.js -o -name *.toml -o -name template* -o -name cloudformation* -o -name cdk* -o -name serverless* -o -name samconfig* -o -name *deploy* -o -name Dockerfile* -o -name *.tf \\\\\\))",
+      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f -not -path */node_modules/* -not -path */dist/* \\\\\\(-name *.yaml -o -name *.yml -o -name *.json -o -name *.ts -o -name *.js \\\\\\))",
+      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f -not -path */node_modules/* -not -path */dist/* \\\\\\(-name *.sh -o -name Dockerfile* -o -name docker-compose* -o -name *.tf -o -name *.toml -o -name *.cfg -o -name *.conf \\\\\\))",
+      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -name seed* -o -name *seed*)"
+    ]
+  }
+}
