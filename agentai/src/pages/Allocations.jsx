@@ -310,7 +310,8 @@ export default function Allocations() {
       if (filterStartDate && form.startDate < filterStartDate) setFilterStartDate(form.startDate);
       if (filterEndDate && form.endDate > filterEndDate) setFilterEndDate(form.endDate);
       const result = await dispatch({ type: 'ADD_ALLOCATION', payload: { ...form, percentage: pct, lastModifiedBy: modifiedBy } });
-      if (result?.id) setHighlightId(result.id);
+      // Delay highlight so the new row is in the table before DataTable looks for it
+      if (result?.id) setTimeout(() => setHighlightId(result.id), 100);
     } else {
       await dispatch({ type: 'UPDATE_ALLOCATION', payload: { id: editId, ...form, percentage: pct, lastModifiedBy: modifiedBy } });
     }
