@@ -99,6 +99,7 @@ export default function Allocations() {
   const columnRenderers = useMemo(() => ({
     employeeName: {
       label: 'Employee',
+      sortValue: (row) => empMap[row.employeeId]?.name || '',
       render: (row) => empMap[row.employeeId]?.name || 'Unknown',
     },
     employeeId: {
@@ -107,6 +108,7 @@ export default function Allocations() {
     },
     costCodeCode: {
       label: 'Cost Code',
+      sortValue: (row) => ccMap[row.costCodeId]?.code || '',
       render: (row) => {
         const cc = ccMap[row.costCodeId];
         return cc ? cc.code : 'Unknown';
@@ -114,6 +116,7 @@ export default function Allocations() {
     },
     costCodeName: {
       label: 'Project Name',
+      sortValue: (row) => ccMap[row.costCodeId]?.name || '',
       render: (row) => {
         const cc = ccMap[row.costCodeId];
         return cc ? cc.name : '-';
@@ -121,6 +124,7 @@ export default function Allocations() {
     },
     costCodeCategory: {
       label: 'Category',
+      sortValue: (row) => ccMap[row.costCodeId]?.category || '',
       render: (row) => {
         const cc = ccMap[row.costCodeId];
         return cc?.category ? <span className="badge badge-neutral">{cc.category}</span> : '-';
@@ -128,10 +132,12 @@ export default function Allocations() {
     },
     sgu: {
       label: 'SGU',
+      sortValue: (row) => ccMap[row.costCodeId]?.sgu || '',
       render: (row) => ccMap[row.costCodeId]?.sgu || <span className="text-muted">-</span>,
     },
     imu: {
       label: 'IMU',
+      sortValue: (row) => ccMap[row.costCodeId]?.imu || '',
       render: (row) => ccMap[row.costCodeId]?.imu || <span className="text-muted">-</span>,
     },
     percentage: {
@@ -202,6 +208,7 @@ export default function Allocations() {
     },
     lastModifiedBy: {
       label: 'Last Modified By',
+      sortKey: 'lastModifiedAt',
       render: (row) => (
         <div className="modified-info">
           <span className="modified-by">{row.lastModifiedBy || '-'}</span>

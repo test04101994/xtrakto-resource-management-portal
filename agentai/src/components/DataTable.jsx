@@ -24,13 +24,16 @@ export default function DataTable({ columns, data, actions, searchPlaceholder = 
 
   const sorted = useMemo(() => {
     if (!sortCol) return filtered;
+    const colDef = columns.find(c => c.key === sortCol);
+    const sortValueFn = colDef?.sortValue;
+    const actualSortKey = colDef?.sortKey || sortCol;
     return [...filtered].sort((a, b) => {
-      const aVal = a[sortCol] ?? '';
-      const bVal = b[sortCol] ?? '';
+      const aVal = sortValueFn ? (sortValueFn(a) ?? '') : (a[actualSortKey] ?? '');
+      const bVal = sortValueFn ? (sortValueFn(b) ?? '') : (b[actualSortKey] ?? '');
       const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal));
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [filtered, sortCol, sortDir]);
+  }, [filtered, sortCol, sortDir, columns]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
