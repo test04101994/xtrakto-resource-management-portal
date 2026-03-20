@@ -306,6 +306,9 @@ export default function Allocations() {
     const modifiedBy = user?.displayName || 'Unknown';
 
     if (modal === 'add') {
+      // Expand date filters if needed so the new row is visible
+      if (filterStartDate && form.startDate < filterStartDate) setFilterStartDate(form.startDate);
+      if (filterEndDate && form.endDate > filterEndDate) setFilterEndDate(form.endDate);
       const result = await dispatch({ type: 'ADD_ALLOCATION', payload: { ...form, percentage: pct, lastModifiedBy: modifiedBy } });
       if (result?.id) setHighlightId(result.id);
     } else {
