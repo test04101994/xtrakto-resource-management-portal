@@ -1,0 +1,541 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Xtrakto.ai Cost Metrics - Serverless stack with VPC support.
+  DynamoDB + Lambda (VPC) + API Gateway + S3 + CloudFront.
+  Provide existing VPC/Subnets or let the template create them.
+
+Parameters:
+  LambdaS3Bucket:
+    Type: String
+    Description: S3 bucket containing the Lambda deployment package (lambda.zip)
+  LambdaS3Key:
+    Type: String
+    Default: lambda.zip
+    Description: S3 key for the Lambda deployment package
+  VpcId:
+    Type: String
+    Default: ''
+    Description: (Optional) Existing VPC ID. Leave blank to create a new VPC.
+  PrivateSubnet1Id:
+    Type: String
+    Default: ''
+    Description: (Optional) Existing private subnet 1 ID for Lambda. Leave blank to create new.
+  PrivateSubnet2Id:
+    Type: String
+    Default: ''
+    Description: (Optional) Existing private subnet 2 ID for Lambda. Leave blank to create new.
+  SecurityGroupId:
+    Type: String
+    Default: ''
+    Description: (Optional) Existing security group ID for Lambda. Leave blank to create new.
+  VpcCIDR:
+    Type: String
+    Default: '10.0.0.0/16'
+    Description: CIDR block for the new VPC (only used when creating a new VPC)
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: '10.0.1.0/24'
+    Description: CIDR for private subnet 1 (only used when creating a new VPC)
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: '10.0.2.0/24'
+    Description: CIDR for private subnet 2 (only used when creating a new VPC)
+  PublicSubnet1CIDR:
+    Type: String
+    Default: '10.0.101.0/24'
+    Description: CIDR for public subnet 1 — used for NAT Gateway (only used when creating a new VPC)
+
+Conditions:
+  CreateVpc: !Equals [!Ref VpcId, '']
+  UseExistingVpc: !Not [!Equals [!Ref VpcId, '']]
+
+Resources:
+
+  # ============ VPC Resources (created only when VpcId is blank) ============
+  Vpc:
+    Type: AWS::EC2::VPC
+    Condition: CreateVpc
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: cost-metrics-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Condition: CreateVpc
+    Properties:
+      Tags:
+        - Key: Name
+          Value: cost-metrics-igw
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PublicSubnet1CIDR
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: cost-metrics-public-1
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: cost-metrics-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Condition: CreateVpc
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Condition: CreateVpc
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Condition: CreateVpc
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: cost-metrics-nat
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: cost-metrics-private-1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      AvailabilityZone: !Select [1, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: cost-metrics-private-2
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: cost-metrics-private-rt
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Condition: CreateVpc
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateVpc
+    Properties:
+      GroupDescription: Security group for Cost Metrics Lambda function
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: cost-metrics-lambda-sg
+
+  # DynamoDB VPC Gateway Endpoint (free, avoids NAT for DynamoDB traffic)
+  DynamoDBVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.dynamodb
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref PrivateRouteTable
+
+  # ============ DynamoDB Tables (static names) ============
+  EmployeesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: cost-metrics-employees
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  CostCodesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: cost-metrics-cost-codes
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: code-index
+          KeySchema:
+            - AttributeName: code
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  AllocationsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: cost-metrics-allocations
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: employeeId
+          AttributeType: S
+        - AttributeName: costCodeId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: employee-index
+          KeySchema:
+            - AttributeName: employeeId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: costCode-index
+          KeySchema:
+            - AttributeName: costCodeId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  LookupsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: cost-metrics-lookups
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: category
+          AttributeType: S
+      KeySchema:
+        - AttributeName: category
+          KeyType: HASH
+
+  CredentialsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: cost-metrics-credentials
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: role
+          AttributeType: S
+      KeySchema:
+        - AttributeName: role
+          KeyType: HASH
+
+  SubmissionsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Delete
+    Properties:
+      TableName: cost-metrics-submissions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # ============ Lambda Function ============
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: cost-metrics-lambda-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:BatchWriteItem
+                  - dynamodb:BatchGetItem
+                Resource:
+                  - !GetAtt EmployeesTable.Arn
+                  - !GetAtt CostCodesTable.Arn
+                  - !Sub ${CostCodesTable.Arn}/index/*
+                  - !GetAtt AllocationsTable.Arn
+                  - !Sub ${AllocationsTable.Arn}/index/*
+                  - !GetAtt LookupsTable.Arn
+                  - !GetAtt CredentialsTable.Arn
+                  - !GetAtt SubmissionsTable.Arn
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: cost-metrics-api
+      Runtime: nodejs20.x
+      Handler: lambda.handler
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: !Ref LambdaS3Key
+      MemorySize: 256
+      Timeout: 30
+      Role: !GetAtt LambdaExecutionRole.Arn
+      VpcConfig:
+        SubnetIds:
+          - !If [CreateVpc, !Ref PrivateSubnet1, !Ref PrivateSubnet1Id]
+          - !If [CreateVpc, !Ref PrivateSubnet2, !Ref PrivateSubnet2Id]
+        SecurityGroupIds:
+          - !If [CreateVpc, !Ref LambdaSecurityGroup, !Ref SecurityGroupId]
+      Environment:
+        Variables:
+          NODE_ENV: production
+          EMPLOYEES_TABLE: !Ref EmployeesTable
+          COST_CODES_TABLE: !Ref CostCodesTable
+          ALLOCATIONS_TABLE: !Ref AllocationsTable
+          LOOKUPS_TABLE: !Ref LookupsTable
+          CREDENTIALS_TABLE: !Ref CredentialsTable
+          SUBMISSIONS_TABLE: !Ref SubmissionsTable
+
+  # ============ API Gateway (HTTP API) ============
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: cost-metrics-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - PATCH
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+  HttpApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt LambdaFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  HttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: '$default'
+      Target: !Sub integrations/${HttpApiIntegration}
+
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: '$default'
+      AutoDeploy: true
+
+  LambdaApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*
+
+  # ============ S3 Bucket for Frontend ============
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cost-metrics-frontend-${AWS::AccountId}
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontOAC
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}
+
+  # ============ CloudFront CDN ============
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: cost-metrics-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !Ref CloudFrontOAC
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+          - Id: ApiOrigin
+            DomainName: !Sub ${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+        CacheBehaviors:
+          - PathPattern: /api/*
+            TargetOriginId: ApiOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        PriceClass: PriceClass_100
+
+  # ============ CloudWatch Log Group ============
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/cost-metrics-api
+      RetentionInDays: 30
+
+Outputs:
+  CloudFrontURL:
+    Description: Application URL (CloudFront)
+    Value: !Sub https://${CloudFrontDistribution.DomainName}
+
+  ApiGatewayURL:
+    Description: API Gateway endpoint
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+
+  FrontendBucketName:
+    Description: S3 bucket for frontend deployment
+    Value: !Ref FrontendBucket
+
+  VpcId:
+    Description: VPC ID (created or provided)
+    Value: !If [CreateVpc, !Ref Vpc, !Ref VpcId]
+
+  PrivateSubnets:
+    Description: Private subnet IDs used by Lambda
+    Value: !If
+      - CreateVpc
+      - !Sub '${PrivateSubnet1}, ${PrivateSubnet2}'
+      - !Sub '${PrivateSubnet1Id}, ${PrivateSubnet2Id}'
+
+  StackName:
+    Description: Stack name
+    Value: !Ref AWS::StackName
