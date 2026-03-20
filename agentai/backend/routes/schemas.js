@@ -3,7 +3,7 @@ const { DEFAULT_SCHEMAS, getSchema, saveSchema } = require('../utils/schemaLoade
 
 const router = Router();
 
-const VALID_ENTITY_TYPES = ['employees', 'costCodes', 'allocations', 'consolidatedAllocations'];
+const VALID_ENTITY_TYPES = ['employees', 'costCodes', 'allocations', 'availableResources', 'consolidatedAllocations'];
 
 // GET /api/schemas — return all schemas
 router.get('/', async (req, res) => {

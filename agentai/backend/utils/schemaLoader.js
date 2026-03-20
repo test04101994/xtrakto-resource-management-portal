@@ -50,6 +50,22 @@ const DEFAULT_SCHEMAS = {
       { key: 'lastModifiedBy', label: 'Last Modified By', type: 'text', builtIn: true, visible: true, required: false, excelHeader: 'Last Modified By' },
     ],
   },
+  availableResources: {
+    fields: [
+      { key: 'employeeName', label: 'Employee', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'employeeId', label: 'Employee ID', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'subBand', label: 'Sub Band', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'roleName', label: 'Role Name', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'country', label: 'Country', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'classification', label: 'Classification', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'pod', label: 'POD', type: 'text', builtIn: true, visible: true, required: false },
+      { key: 'startDate', label: 'Available From', type: 'date', builtIn: true, visible: true, required: false },
+      { key: 'endDate', label: 'Available To', type: 'date', builtIn: true, visible: true, required: false },
+      { key: 'availablePct', label: 'Available %', type: 'number', builtIn: true, visible: true, required: false },
+      { key: 'totalAllocated', label: 'Currently Allocated', type: 'number', builtIn: true, visible: true, required: false },
+      { key: 'allocations', label: 'Current Assignments', type: 'text', builtIn: true, visible: true, required: false },
+    ],
+  },
   consolidatedAllocations: {
     fields: [
       { key: 'emp.name', label: 'Employee', source: 'employee', visible: true },

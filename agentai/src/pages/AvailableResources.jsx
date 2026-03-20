@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import DataTable from '../components/DataTable';
 import StatusBadge from '../components/StatusBadge';
-import { Calendar, UserCheck, Search, Download } from 'lucide-react';
+import { Calendar, UserCheck, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { formatDate } from '../utils/dateUtils';
 
@@ -132,6 +133,68 @@ export default function AvailableResources() {
 
   const uniqueEmployees = new Set(filtered.map(r => r.employeeId)).size;
 
+  const resSchema = state.schemas?.availableResources?.fields || [];
+
+  // Render map for all known column keys
+  const columnRenderers = useMemo(() => ({
+    employeeName: {
+      label: 'Employee',
+      render: (row) => <strong>{row.employeeName}</strong>,
+    },
+    employeeId: {
+      label: 'Employee ID',
+      render: (row) => <span className="text-muted">{row.employeeId}</span>,
+    },
+    subBand: { label: 'Sub Band' },
+    roleName: { label: 'Role Name' },
+    country: { label: 'Country' },
+    classification: { label: 'Classification' },
+    pod: { label: 'POD' },
+    startDate: { label: 'Available From', render: (row) => formatDate(row.startDate) },
+    endDate: { label: 'Available To', render: (row) => formatDate(row.endDate) },
+    availablePct: {
+      label: 'Available %',
+      render: (row) => (
+        <span className={`badge ${row.availablePct >= 50 ? 'badge-success' : 'badge-warning'}`}>
+          {row.availablePct}%
+        </span>
+      ),
+    },
+    totalAllocated: {
+      label: 'Currently Allocated',
+      render: (row) => <StatusBadge percentage={row.totalAllocated} />,
+    },
+    allocations: {
+      label: 'Current Assignments',
+      sortable: false,
+      render: (row) => (
+        <div className="alloc-chips">
+          {row.allocations.length === 0 ? (
+            <span className="text-muted">No assignments</span>
+          ) : (
+            row.allocations.map((a, j) => (
+              <span key={j} className="alloc-chip chip-approved">{a}</span>
+            ))
+          )}
+        </div>
+      ),
+    },
+  }), []);
+
+  // Build columns from schema, respecting visible toggle
+  const resourceColumns = useMemo(() => {
+    return resSchema
+      .filter(f => f.visible !== false)
+      .map(f => {
+        const renderer = columnRenderers[f.key];
+        if (renderer) {
+          return { key: f.key, label: renderer.label || f.label, ...renderer };
+        }
+        // Custom field — render directly from row data
+        return { key: f.key, label: f.label, render: (row) => row[f.key] ?? '-' };
+      });
+  }, [resSchema, columnRenderers]);
+
   function handleExport() {
     const wb = XLSX.utils.book_new();
     const data = filtered.map(r => ({
@@ -222,81 +285,11 @@ export default function AvailableResources() {
         )}
       </div>
 
-      <div className="data-table-wrapper">
-        <div className="table-search">
-          <Search size={16} />
-          <input
-            type="text"
-            placeholder="Search by name, role, sub band, country, classification, pod..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Employee ID</th>
-                <th>Sub Band</th>
-                <th>Role Name</th>
-                <th>Country</th>
-                <th>Classification</th>
-                <th>POD</th>
-                <th>Available From</th>
-                <th>Available To</th>
-                <th>Available %</th>
-                <th>Currently Allocated</th>
-                <th>Current Assignments</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="empty-row">
-                    <UserCheck size={20} style={{ marginBottom: 4 }} />
-                    <div>All employees are fully allocated in this date range</div>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((r, i) => (
-                  <tr key={i}>
-                    <td><strong>{r.employeeName}</strong></td>
-                    <td className="text-muted">{r.employeeId}</td>
-                    <td>{r.subBand}</td>
-                    <td>{r.roleName}</td>
-                    <td>{r.country}</td>
-                    <td>{r.classification}</td>
-                    <td>{r.pod}</td>
-                    <td>{formatDate(r.startDate)}</td>
-                    <td>{formatDate(r.endDate)}</td>
-                    <td>
-                      <span className={`badge ${r.availablePct >= 50 ? 'badge-success' : 'badge-warning'}`}>
-                        {r.availablePct}%
-                      </span>
-                    </td>
-                    <td><StatusBadge percentage={r.totalAllocated} /></td>
-                    <td>
-                      <div className="alloc-chips">
-                        {r.allocations.length === 0 ? (
-                          <span className="text-muted">No assignments</span>
-                        ) : (
-                          r.allocations.map((a, j) => (
-                            <span key={j} className="alloc-chip chip-approved">{a}</span>
-                          ))
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="table-footer">
-          {filtered.length} records found
-        </div>
-      </div>
+      <DataTable
+        columns={resourceColumns}
+        data={filtered}
+        searchPlaceholder="Search by name, role, sub band, country, classification, pod..."
+      />
     </div>
   );
 }

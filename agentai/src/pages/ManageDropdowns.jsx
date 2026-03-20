@@ -21,6 +21,7 @@ const ENTITY_TABS = [
   { key: 'employees', label: 'Employees' },
   { key: 'costCodes', label: 'Cost Codes' },
   { key: 'allocations', label: 'Allocations' },
+  { key: 'availableResources', label: 'Available Resources' },
   { key: 'consolidatedAllocations', label: 'Consolidated View' },
 ];
 
