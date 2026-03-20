@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import DataTable from '../components/DataTable';
@@ -47,6 +47,13 @@ export default function Allocations() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [highlightId, setHighlightId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Clear highlight after flash animation completes
+  useEffect(() => {
+    if (!highlightId) return;
+    const timer = setTimeout(() => setHighlightId(null), 3500);
+    return () => clearTimeout(timer);
+  }, [highlightId]);
 
   const allocationWindow = state.allocationWindow || { startDate: '', endDate: '', enabled: false };
   const isManager = user?.role === 'Manager';
@@ -510,6 +517,7 @@ export default function Allocations() {
         selectable={isAdmin || isManager}
         selectedIds={selectedIds}
         onSelectionChange={setSelectedIds}
+        highlightId={highlightId}
         actions={(row) => (
           <>
             {isAdmin ? (
