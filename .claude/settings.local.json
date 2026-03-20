@@ -28,7 +28,25 @@
       "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f \\\\\\(-name *.yaml -o -name *.yml -o -name *.json -o -name *.ts -o -name *.js -o -name *.toml -o -name template* -o -name cloudformation* -o -name cdk* -o -name serverless* -o -name samconfig* -o -name *deploy* -o -name Dockerfile* -o -name *.tf \\\\\\))",
       "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f -not -path */node_modules/* -not -path */dist/* \\\\\\(-name *.yaml -o -name *.yml -o -name *.json -o -name *.ts -o -name *.js \\\\\\))",
       "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -type f -not -path */node_modules/* -not -path */dist/* \\\\\\(-name *.sh -o -name Dockerfile* -o -name docker-compose* -o -name *.tf -o -name *.toml -o -name *.cfg -o -name *.conf \\\\\\))",
-      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -name seed* -o -name *seed*)"
+      "Bash(find /Users/parasghai/Desktop/cost_allocation/agentai -name seed* -o -name *seed*)",
+      "Bash(zip -r ../lambda.zip .)",
+      "Bash(grep -rn \"VITE_API_URL\" /Users/parasghai/Desktop/cost_allocation/agentai/vite.config.* /Users/parasghai/Desktop/cost_allocation/agentai/.env*)",
+      "Bash(grep -rn \"proxy\" /Users/parasghai/Desktop/cost_allocation/agentai/vite.config.*)",
+      "Bash(aws apigateway:*)",
+      "Bash(aws apigatewayv2:*)",
+      "Bash(curl -s \"https://jtbqdx11ge.execute-api.us-east-1.amazonaws.com/api/allocations\")",
+      "Bash(python3 -c \":*)",
+      "Bash(curl -s -X POST \"https://jtbqdx11ge.execute-api.us-east-1.amazonaws.com/api/allocations\" -H \"Content-Type: application/json\" -d '{\"\"\"\"employeeId\"\"\"\":\"\"\"\"test-debug\"\"\"\",\"\"\"\"costCodeId\"\"\"\":\"\"\"\"test-debug\"\"\"\",\"\"\"\"percentage\"\"\"\":10,\"\"\"\"startDate\"\"\"\":\"\"\"\"2026-04-01\"\"\"\",\"\"\"\"endDate\"\"\"\":\"\"\"\"2026-04-30\"\"\"\",\"\"\"\"allocationType\"\"\"\":\"\"\"\"Forecasted\"\"\"\",\"\"\"\"comment\"\"\"\":\"\"\"\"Test comment here\"\"\"\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Bash(unzip -p lambda.zip routes/allocations.js)",
+      "Bash(unzip -l /Users/parasghai/Desktop/cost_allocation/agentai/lambda.zip)",
+      "Bash(shasum -a 256 /Users/parasghai/Desktop/cost_allocation/agentai/lambda.zip)",
+      "Read(//Users/parasghai/Desktop/cost_allocation/agentai/**)",
+      "Bash(aws s3api:*)",
+      "Bash(curl -s -X POST \"https://jtbqdx11ge.execute-api.us-east-1.amazonaws.com/api/allocations\" -H \"Content-Type: application/json\" -d '{\"\"\"\"employeeId\"\"\"\":\"\"\"\"test-debug2\"\"\"\",\"\"\"\"costCodeId\"\"\"\":\"\"\"\"test-debug2\"\"\"\",\"\"\"\"percentage\"\"\"\":10,\"\"\"\"startDate\"\"\"\":\"\"\"\"2026-05-01\"\"\"\",\"\"\"\"endDate\"\"\"\":\"\"\"\"2026-05-31\"\"\"\",\"\"\"\"allocationType\"\"\"\":\"\"\"\"Forecasted\"\"\"\",\"\"\"\"comment\"\"\"\":\"\"\"\"Test comment works\"\"\"\"}')",
+      "Bash(curl -s -X DELETE \"https://jtbqdx11ge.execute-api.us-east-1.amazonaws.com/api/allocations/4e70983c-651c-4c84-afbb-cb4c9c8b55f4\")",
+      "Bash(curl -s -X DELETE \"https://jtbqdx11ge.execute-api.us-east-1.amazonaws.com/api/allocations/1e938a77-cb35-437a-bf26-43726a9b19e8\")",
+      "Bash(rm -f ../lambda.zip)"
     ]
   }
 }
