@@ -135,7 +135,7 @@ export default function Employees() {
   }
 
   function openAdd() {
-    setForm({ ...emptyForm, id: uuidv4() });
+    setForm({ ...emptyForm, id: '' });
     setEditId(null);
     setModal('add');
   }
@@ -310,24 +310,34 @@ export default function Employees() {
       {modal && (
         <Modal title={modal === 'add' ? 'Add Employee' : 'Edit Employee'} onClose={() => setModal(null)}>
           <form onSubmit={handleSubmit} className="form">
-            <div className="form-row">
-              <label>
-                Emp ID
-                <input
-                  value={form.id}
-                  onChange={e => setForm({ ...form, id: e.target.value })}
-                  placeholder="Auto-generated"
-                  readOnly={modal === 'add'}
-                  className={modal === 'add' ? 'input-readonly' : ''}
-                />
-              </label>
-              {formFields[0] && renderFormField(formFields[0])}
-            </div>
-            {formRows.slice(1).map((pair, i) => (
-              <div className="form-row" key={i}>
-                {pair.map(f => renderFormField(f))}
-              </div>
-            ))}
+            {(() => {
+              // Build all fields: Emp ID as first, then all formFields
+              const allItems = [
+                <label key="emp-id">
+                  Emp ID *
+                  <input
+                    type="number"
+                    required
+                    value={form.id}
+                    onChange={e => setForm({ ...form, id: e.target.value })}
+                    placeholder="Enter Employee ID"
+                    readOnly={modal === 'edit'}
+                    className={modal === 'edit' ? 'input-readonly' : ''}
+                  />
+                </label>,
+                ...formFields.map(f => renderFormField(f))
+              ];
+              const rows = [];
+              for (let i = 0; i < allItems.length; i += 2) {
+                rows.push(
+                  <div className="form-row" key={i}>
+                    {allItems[i]}
+                    {allItems[i + 1] || null}
+                  </div>
+                );
+              }
+              return rows;
+            })()}
             <div className="form-actions">
               <button type="button" className="btn" onClick={() => setModal(null)}>Cancel</button>
               <button type="submit" className="btn btn-primary">{modal === 'add' ? 'Add' : 'Save'}</button>

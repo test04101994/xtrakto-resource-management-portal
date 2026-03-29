@@ -635,6 +635,7 @@ export default function Allocations() {
                 required
                 min="1"
                 max="100"
+                step="any"
                 value={form.percentage}
                 onChange={e => { setForm({ ...form, percentage: e.target.value }); setError(''); }}
               />
