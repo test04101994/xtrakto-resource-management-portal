@@ -252,7 +252,7 @@ export default function Allocations() {
   }
 
   function openEdit(alloc) {
-    if (!isAdmin || isLocked(alloc)) return;
+    if (!isAdmin && isLocked(alloc)) return;
     setForm({
       employeeId: alloc.employeeId,
       costCodeId: alloc.costCodeId,
@@ -532,14 +532,10 @@ export default function Allocations() {
         actions={(row) => (
           <>
             {isAdmin ? (
-              isLocked(row) ? (
-                <span className="text-muted" title={`${row.allocationType} — locked`}><Lock size={14} /></span>
-              ) : (
-                <>
-                  <button className="btn-icon" title="Edit" onClick={() => openEdit(row)}><Edit2 size={15} /></button>
-                  <button className="btn-icon danger" title="Delete" onClick={() => handleDelete(row.id)}><Trash2 size={15} /></button>
-                </>
-              )
+              <>
+                <button className="btn-icon" title="Edit" onClick={() => openEdit(row)}><Edit2 size={15} /></button>
+                <button className="btn-icon danger" title="Delete" onClick={() => handleDelete(row.id)}><Trash2 size={15} /></button>
+              </>
             ) : (
               <span className="text-muted" title="Admin only"><Lock size={14} /></span>
             )}
